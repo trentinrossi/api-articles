@@ -335,3 +335,10 @@ Outra forma de ordenação é utilizando o sinal de `-`, `asc` ou `desc` para contr
 http://api.escola.com.br/v1/alunos?sort=nome:desc,idade
 ```
 
+### Boas práticas
+
+- Use offset-based ou page-based para paginação, pois eles são mais fáceis de entender e implementar do que cursor-based.
+- Defina alguns valores default para o offset e o limit, além de limitar os valores caso nenhum seja informado, também protege a API de ataques de negação de serviço.
+- Não exagere na quantidade de parametros na query, pois isso pode dificultar a leitura e entendimento da requisição.
+
+## Políticas em APIs RESTful
