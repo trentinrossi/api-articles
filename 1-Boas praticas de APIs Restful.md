@@ -1,14 +1,27 @@
-# APIs Restful - Boas práticas de implementação
+Instructions prompt: I need to create a article about best practices to implement a RESTful API that will be readed by company employees and also for external developers. The article needs to tell about API Restful, methods, http codes, security and recommend best practices for API design, including proper HTTP methods, error handling, and authentication methods. Additionally, could you provide examples of successful RESTful API implementations for similar applications to help the reader understand the best practices in action? You should be a strong writer with a background in software development and a deep understanding of RESTful API design. Also you should be able to provide examples of successful RESTful API implementations for similar applications to help the reader understand the best practices in action. These examples should be in typescript and based on the express framework and should be well documented.
 
-## Algumas estatísticas importantes
+# APIs Restful - Boas práticas de implementação
 
 Um desenvoledor usa em média 18 APIs diferentes por semana e 60% dos desenvolvedores usam APIs de terceiros para melhorar a funcionalidade de seus aplicativos. Todo ano, surgem mais de 15.000 novas APIs.
 
 O mercado de APIs está crescendo rapidamente. Em 2019, o mercado global de APIs foi avaliado em US$ 5,2 bilhões e espera-se que atinja US$ 6,2 bilhões até 2024.
 
-## O endpoint
+## Entendendo as requisições HTTP
 
-Um endpoint é um ponto de acesso a um serviço web. Ele é definido por um URL e pode ser acessado por meio de um método HTTP, como GET, POST, PUT, DELETE, etc. Porem é importante ressaltar que ele segue a seguinte estrutura:
+## Endpoint
+
+É o recurso que está sendo acessado, também chamado de rota, resource ou path. Por exemplo
+
+```bash
+http://api.escola.com.br/v1/alunos
+```
+
+Neste exemplo, o endpoint é `/alunos`, ou seja, estamos acessando o recurso de alunos.
+
+- Use substantivos no plural para os endpoints, ou seja, `/alunos` em vez de `/aluno`.
+- Use letras minúsculas e separar as palavras com hífen, ou seja, `/alunos` em vez de `/Alunos`.
+- Use nomes descritivos para os endpoints, ou seja, `/alunos` em vez de `/a`.
+- Use sub-recursos para representar relacionamentos, ou seja, `/alunos/123/matriculas` em vez de `/matriculas?aluno=123`.
 
 ### Base URL
 
@@ -18,33 +31,42 @@ Um endpoint é um ponto de acesso a um serviço web. Ele é definido por um URL e p
 http://api.escola.com.br
 ```
 
-### Versão da API
+No backend, você pode usar a base URL para configurar a conexão com o servidor, ou seja, você pode definir a base URL como uma variável de ambiente e usar essa variável para fazer as requisições. Por exemplo
 
-É uma boa prática incluir a versão da API na URL. Isso permite que você faça alterações na API sem quebrar as aplicações que já estão usando a versão anterior. Por exemplo
-
-```bash
-http://api.escola.com.br/v1
+```javascript
+const baseURL = process.env.BASE_URL || "http://api.escola.com.br";
 ```
 
-Também é possível usar a versão da API como um header ou como query parameter na requisição, mas é uma prática menos comum.
+Esse domínio também deverá ser devidamente configurado e estar acessível para os clientes que irão consumir a API.
 
-### Endpoint
-
-É o recurso que está sendo acessado, também chamado de rota, resource ou path. Por exemplo
-
-```bash
-http://api.escola.com.br/v1/alunos
-```
+- Use HTTPS em vez de HTTP.
+- Use um domínio descritivo, ou seja, use um domínio que descreva o que a API faz, como por exemplo `api.escola.com.br` em vez de `api123.com.br`.
+- Use um domínio de nível superior, ou seja, use um domínio que seja de propriedade da empresa, como por exemplo `escola.com.br` em vez de `escola.herokuapp.com`.
 
 ### Métodos HTTP
 
 Os métodos HTTP que podem ser usados para acessar o recurso. Por exemplo
 
-- GET: para buscar informações
-- POST: para criar um novo recurso
-- PUT: para atualizar um recurso
-- PUSH: para atualizar um recurso parcialmente
-- DELETE: para deletar um recurso
+- GET: para buscar informações (read)
+- POST: para criar um novo recurso (create)
+- PUT: para atualizar um recurso (update)
+- PUSH: para atualizar um recurso parcialmente (update)
+- DELETE: para deletar um recurso (delete)
+
+- O uso correto dos métodos HTTP é uma das práticas mais importantes, pois além de fazer o uso correto dos métodos, onde por si só já estão documentando o que a requisição está fazendo, também ajuda a manter a API organizada e fácil de entender.
+
+## Versionamento da API
+
+O versionamento da API é uma prática comum para garantir a compatibilidade entre as versões da API, ou seja, se você fizer uma alteração na API, você pode criar uma nova versão da API para garantir que os clientes que estão usando a versão antiga da API não sejam afetados, evitando assim as `breaking-changes`. Exemplo:
+
+```bash
+http://api.escola.com.br/v1
+```
+
+Neste exemplo, a versão da API é `v1`, ou seja, estamos acessando a primeira versão da API.
+
+- A melhor prática é usar a versão da API na URL, ou seja, `/v1` ou `/v1.0`. Desta forma o versionamento fica mais verboso e fácil de identificar.
+- Evite usar a versão da API no header da requisição ou no query parameters, pois dificulta a identificação da versão da API.
 
 ### Query parameters
 
@@ -56,12 +78,56 @@ http://api.escola.com.br/v1/alunos?nome=joao&idade=18
 
 Como podem ver, a URL é composta por várias partes, separando os parametros por `?` e caso queira adicionar mais de um parametro, basta separar por `&`.
 
+- Use query parameters para filtrar, ordenar ou paginar os resultados, exemplo: `/alunos?nome=joao&idade=18`.
+- Não use query parameters para enviar dados sensíveis, como por exemplo o token de autenticação, pois eles podem ser facilmente interceptados.
+- Use nomes descritivos para os query parameters, ou seja, `/alunos?nome=joao&idade=18` em vez de `/alunos?n=joao&i=18`.
+- Uma boa prática é o uso de Kebab Case para os query parameters, ou seja, `/alunos?nome-completo=joao&idade=18`.
+- Caso a quantidade de parametros seja muito grande, é recomendado o uso de um objeto JSON no body da requisição, ao invés de passar todos os parametros na URL. Exemplo: `/alunos` com um body `{"nome": "joao", "idade": 18}`. Neste caso o método da requisição seria `POST` ou `PUT`.
+
+No backend, você pode por exemplo usar os dados capturados para aplicar filtros, ordenação e paginação já na consulta ao banco de dados. Exemplo:
+
+```javascript
+const nome = req.query.nome;
+const idade = req.query.idade;
+
+const alunos = await Aluno.find({ nome, idade });
+```
+
 ### Headers
 
 São usados para enviar informações adicionais na requisição, como por exemplo o token de autenticação. Por exemplo
 
 ```bash
 curl -X GET "http://api.escola.com.br/v1/alunos" -H "Authorization: Bearer 123456"
+```
+
+Uma lista completa dos headers pode ser encontrada [aqui](https://developer.mozilla.org/pt-BR/docs/Web/HTTP/Headers).
+
+- Use headers para enviar informações adicionais na requisição, como por exemplo o token de autenticação.
+- Use nomes descritivos para os headers, ou seja, `Authorization` em vez de `Auth`.
+- Use o header `Content-Type` para especificar o tipo de conteúdo que está sendo enviado no body da requisição, como por exemplo `application/json`.
+- Use o header `Accept` para especificar o tipo de conteúdo que é aceito na resposta, como por exemplo `application/json`.
+
+No backend, você pode usar os headers para verificar se o usuário está autenticado, ou seja, você pode verificar se o header `Authorization` está presente na requisição e se o token de autenticação é válido. Isso pode ser feito implementando um middleware que verifica o token de autenticação antes de processar a requisição. Exemplo:
+
+```javascript
+const jwt = require("jsonwebtoken");
+
+const verifyToken = (req, res, next) => {
+  const token = req.headers.authorization;
+
+  if (!token) {
+    return res.status(401).json({ message: "Token not found" });
+  }
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = decoded;
+    next();
+  } catch (error) {
+    return res.status(401).json({ message: "Invalid token" });
+  }
+};
 ```
 
 ### Body
@@ -84,7 +150,7 @@ Para facilitar o entendimento das respostas, a API retorna um código de status H
 - 4xx: Erro do cliente - indica que o cliente fez uma requisição inválida (ex: 404 - Not Found)
 - 5xx: Erro do servidor - indica que o servidor falhou ao atender uma requisição aparentemente válida (ex: 500 - Internal Server Error)
 
-### Autenticações
+### Autenticação
 
 Existem várias formas de autenticação, as mais comuns são:
 
@@ -160,3 +226,112 @@ Lembrando que isso seria uma recomendação do protocolo e que tudo depende da imp
 ## Segurança em APIs RESTful
 
 A segurança é um dos aspectos mais importantes de uma API. Sem segurança, a API pode ser vulnerável a ataques, como por exemplo, ataques de injeção de SQL, ataques de cross-site scripting, ataques de negação de serviço, etc.
+
+### Autenticação e autorização
+
+A autenticação é o processo de verificar a identidade do usuário, ou seja, verificar se o usuário é quem ele diz ser. Já a autorização é o processo de verificar se o usuário tem permissão para acessar um recurso, ou seja, o que você pode fazer depois de estar autenticado.
+
+### Basic Authentication
+
+A autenticação básica é o método mais simples de autenticação, onde o usuário e senha são enviados no header da requisição e são codificados em base64. Exemplo:
+
+```bash
+curl -X GET "http://api.escola.com.br/v1/alunos" -H "Authorization: Basic dXNlcjpwYXNzd29yZA=="
+```
+
+A basic authentication é um método simples de autenticação, onde o usuário e senha são enviados no header da requisição e são codificados em base64. No entanto, é importante ressaltar que esse método não é recomendado como única medida de segurança. É recomendado utilizar outros complementos de segurança, como o certificado HTTPS, para garantir a proteção adequada dos dados. Em alguns casos, é possível substituir o uso de usuário e senha por tokens, mas essa prática é exceção e não é recomendada pela especificação.
+
+### API Keys
+
+API Keys é um método de autenticação que tem como objetivo solucionar algumas limitações do modelo de Basic Authentication. A proposta do método de API Keys é simples: o servidor gera uma chave de acesso exclusiva para o cliente, e o cliente envia essa chave em cada requisição para utilizar a API.
+
+Esse método é fácil e rápido de implementar, e por muito tempo foi amplamente utilizado pelos desenvolvedores. No entanto, ele possui algumas limitações. O principal problema é que esse método é utilizado apenas para autenticação e não para autorização. Em outras palavras, um usuário com uma chave válida tem acesso a todas as operações disponíveis na API.
+
+Além disso, as requisições utilizando API Keys são transmitidas por meio do protocolo HTTP, o que significa que se houver algum ponto vulnerável na rede, a chave pode ser interceptada e utilizada para acessos não autorizados à API.
+
+Normalmente, a chave de acesso é incluída no header da requisição. Por exemplo, suponha que você tenha recebido a seguinte chave do servidor: 'user123456'. Para autenticar-se na API, você deve realizar uma requisição com o seguinte header:
+
+```bash
+curl -X GET "http://api.escola.com.br/v1/alunos" -H "Api-Key: user123456"
+```
+
+### OAuth
+
+O OAuth encontra-se na sua edição 2.0, não se limitando a ser apenas um meio de autenticação; trata-se, de fato, de um protocolo abrangente com inúmeras diretrizes de segurança. Sua utilidade é notável no contexto de autenticação e autorização, tornando-se, assim, a abordagem preconizada para o ambiente de APIs. Vamos explorar alguns princípios fundamentais do OAuth 2.
+
+- Resource Owner: entidade detentora do recurso, isto é, capaz de gerenciar o acesso a um determinado recurso. Geralmente, corresponde ao próprio usuário.
+- Resource Server: plataforma que detém os recursos e, por conseguinte, processa as solicitações.
+- Authorization Server: sistema responsável por gerar tokens de acesso, viabilizando que o cliente acesse os recursos autorizados pelo proprietário de recursos.
+- Client: aplicação que solicita acesso a um recurso protegido em nome do proprietário do recurso.
+
+Para aprofundar a compreensão, suponhamos que você tenha desenvolvido uma aplicação que utiliza informações do usuário do Facebook. Vamos simular um fluxo básico de autenticação via OAuth 2.0:
+
+1. O usuário acessa seu site ou aplicativo, onde encontra um botão "Integrar ao Facebook". Seu site ou aplicativo atua como o cliente (client).
+2. Ao clicar no botão, o usuário é redirecionado para a tela de login do Facebook (servidor de autorização).
+3. Após o usuário fornecer suas credenciais, o Facebook fornece um código de autorização para o cliente.
+4. Em seguida, o cliente solicita a autorização dos recursos (endpoints da API do Facebook) ao proprietário de recursos (que é o próprio usuário), enviando o código de autorização recebido anteriormente.
+5. O servidor de autorização verifica a validade do código de autorização e, se positivo, gera um token de acesso para retornar ao cliente.
+6. Por fim, com o token de acesso e a devida autorização para acessar os recursos, o cliente, a cada requisição, envia solicitações ao servidor de recursos (API do Facebook), que responde com os dados protegidos.
+
+Além dos tópicos mencionados sobre a especificação do OAuth, existem outros aspectos relevantes para implementação:
+
+**OpenID Connect:** Esta é uma extensão da funcionalidade de autenticação do OAuth. Enquanto o OAuth foi concebido para autorização, o OpenID Connect é um complemento valioso para reforçar a segurança das APIs. Ele desempenha um papel fundamental ao verificar a verdadeira identidade do usuário.
+
+**JWT (JSON Web Token):** Trata-se de um formato de token seguro que utiliza JSON como base, oferecendo uma maneira eficiente e segura de transmitir informações entre partes.
+
+**SAML (Security Assertion Markup Language):** O SAML é um padrão aberto que possibilita que provedores de identidade (IDP) transmitam credenciais de autorização para provedores de serviços (SP). Em outras palavras, os usuários podem utilizar as mesmas credenciais para acessar diferentes aplicações. O SAML é especialmente útil na implementação de Single Sign-On (SSO), proporcionando aos usuários a conveniência de fazer login uma única vez e navegar por todas as aplicações compatíveis.
+
+Embora o SAML ofereça benefícios no contexto do SSO, é importante notar que seu uso pode ser mais limitado em cenários atuais de desenvolvimento web devido à comunicação baseada em XML, considerada por alguns como uma abordagem ultrapassada para as práticas atuais. Portanto, sua aplicabilidade pode ser mais relevante em situações em que o SSO é uma exigência primordial.
+
+## Boas práticas de segurança
+
+- Use HTTPS em vez de HTTP, pois o HTTPS é mais seguro e protege os dados transmitidos entre o cliente e o servidor.
+- Mantenha simples a sua implementação e pense na experiência do desenvolvedor, quanto mais complexo for o processo de autenticação, mais difícil será para os desenvolvedores utilizarem a sua API, perdendo o engajaento da comunidade.
+- Não exponha informações sensíveis na URL, como por exemplo o token de autenticação, pois elas podem ser facilmente interceptadas.
+- Considere o uso do OAuth 2.0 para autenticação e autorização, pois ele é um protocolo abrangente com inúmeras diretrizes de segurança.
+- Utilize rate limiting para limitar o número de requisições que um cliente pode fazer em um determinado período de tempo, evitando assim ataques de negação de serviço.
+- Para situações mais críticas, considere o uso de timestamps customizados no header das requisições, onde o server pode verificar se a requisição está próxima a um período de tempo esperado, evitando assim ataques básicos de replay e força bruta.
+- Valide o parâmetros da requisição, sempre valide os parâmetros da requisição antes de entrar na lógica de negócio, caso possua algum parâmetro indesejado, retorne imediatamente um erro do tipo 400 por exemplo, fornecendo detalhes do motivo da rejeição, pois pode ser um idicio de ataque malicioso.
+- Utilize uma ferramenta de API Gateway, como por exemplo o Amazon API Gateway, que fornece recursos de segurança, monitoramento e gerenciamento de tráfego para as APIs.
+
+## Paginação, ordenação e filtragem
+
+A paginação, ordenação e filtragem são práticas comuns em APIs RESTful para lidar com grandes volumes de dados. Elas permitem que os clientes solicitem apenas os dados necessários, evitando assim o envio de grandes volumes de dados pela rede.
+Devem ser levadas em consideração a experiência do desenvolvedor bem como o aproveitamento inteligente da estrutura dos dados, isso ajuda muito na escalabilidade horizontal e vertical de uma API.
+
+### Paginação
+
+- Cursor-based: é um método de paginação que utiliza um cursor para marcar a posição do último registro retornado. O cursor é um ponteiro para um registro específico no conjunto de dados. O cliente envia o cursor na requisição e o servidor retorna os registros após o cursor. Este método é útil para conjuntos de dados que são atualizados frequentemente, pois ele garante que os registros não sejam duplicados ou perdidos.
+
+```bash
+http://api.escola.com.br/v1/alunos?matricula_from=123&matricula_to=456
+```
+
+Note que os parâmetros `matricula_from` e `matricula_to` são os cursores que delimitam o intervalo de registros que serão retornados. Claro que o nome dos parametros podem variar de acordo com a necessidade e da implementação da API.
+
+- Offset-based: é um método de paginação que utiliza um offset e um limite para marcar a posição do primeiro registro retornado e o número de registros que serão retornados. O cliente envia o offset e o limite na requisição e o servidor retorna os registros a partir do offset e com o limite especificado. Este método é útil para conjuntos de dados que não são atualizados frequentemente, pois ele pode retornar registros duplicados ou perdidos.
+
+```bash
+http://api.escola.com.br/v1/alunos?offset=10&limit=10
+```
+
+- Page-based: é um método de paginação que utiliza um número de página e um tamanho de página para marcar a posição da página e o número de registros que serão retornados. O cliente envia o número da página e o tamanho da página na requisição e o servidor retorna os registros da página especificada com o tamanho especificado. Este método é útil para conjuntos de dados que são atualizados frequentemente, pois ele garante que os registros não sejam duplicados ou perdidos.
+
+```bash
+http://api.escola.com.br/v1/alunos?page=2&size=10
+```
+
+### Ordenação
+
+A ordenação é uma prática comum em APIs RESTful para ordenar os registros de acordo com um ou mais campos. Ela permite que os clientes solicitem os registros em uma ordem específica, como por exemplo, ordem alfabética, ordem numérica, etc.
+
+```bash
+http://api.escola.com.br/v1/alunos?sort=nome,idade
+```
+
+Outra forma de ordenação é utilizando o sinal de `-`, `asc` ou `desc` para controlar a forma de ordenação.
+
+```bash
+http://api.escola.com.br/v1/alunos?sort=nome:desc,idade
+```
+
