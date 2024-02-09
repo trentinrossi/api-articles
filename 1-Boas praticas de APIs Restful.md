@@ -342,3 +342,98 @@ http://api.escola.com.br/v1/alunos?sort=nome:desc,idade
 - Não exagere na quantidade de parametros na query, pois isso pode dificultar a leitura e entendimento da requisição.
 
 ## Políticas em APIs RESTful
+
+As políticas em APIs RESTful são regras que definem como os clientes podem acessar os recursos da API. Elas são usadas para controlar o acesso aos recursos, limitar o número de requisições que um cliente pode fazer em um determinado período de tempo, autenticar e autorizar os clientes, etc.
+
+### Throttling e Rate limiting
+
+Embora ambos os termos sejam usados para limitar o número de requisições que um cliente pode fazer em um determinado período de tempo, eles têm significados diferentes.
+
+- **Rate limiting**: técnica utilizada para limitar o número de requisições que um cliente pode fazer em um determinado período de tempo. Ela é usada para proteger a API de ataques de negação de serviço, como por exemplo, ataques de força bruta, ataques de scraping, etc.
+
+Exemplo de implementação que limita o número de requisições para 1000 requisições por hora:
+
+```javascript
+const rateLimit = require("express-rate-limit");
+
+const limiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 1000, // limit each IP to 1000 requests per windowMs
+  message: "Too many requests from this IP, please try again after an hour",
+});
+
+//  apply to all requests
+app.use(limiter);
+```
+
+- **Throttling**: Usada para limitar o delay entre uma requisição e outra, ou seja, caso o Rate limit seja definido para no máximo 1000 requisições por hora, o que impede o cliente de fazer essas 1000 requisições dentro de 1 segundo? É ai que entra o Throttling.
+
+Exemplo de implementação que limita o delay entre uma requisição e outra para 1 segundo:
+
+```javascript
+const slowDown = require("express-slow-down");
+
+const speedLimiter = slowDown({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  delayAfter: 1, // allow 1 request per windowMs
+  delayMs: 1000, // 1 second delay
+});
+
+//  apply to all requests
+app.use(speedLimiter);
+```
+
+Importante destacar que ambas as técnicas são complementares e podem ser utilizadas/parametrizadas por rotas, usuários, IPs, etc. Além disso, elas são indispensáveis para ajudar na escalabilidade e segurança da API.
+
+### API Quota
+
+Utilizada em uma estratégia mais comercial, onde você pode vender pacotes de requisições para os clientes, ou seja, você pode vender um pacote de 1000 requisições por mês para um cliente, e um pacote de 5000 requisições por mês para outro cliente em determinada API ou domínio.
+
+Note que agora o período de tempo é maior, onde normalmente é mensal pois é mais comum em contratos comerciais, mas pode ser configurado para qualquer período de tempo, funciona como uma conta de celular onde você tem um pacote de dados para usar durante o mês, e caso você ultrapasse o limite, você pode ser cobrado por requisição adicional por exemplo.
+
+É importante ressaltar que API Quota pode ser combinada com as técnicas de Rate limiting e Throttling, oferecendo diferentes opções de pacotes para os clientes conforme suas necessidades, tornando seu produto mais competitivo.
+
+### API Burst
+
+Utilizado quando você possui uma arquitetura elástica, onde você pode aumentar a capacidade de processamento da API conforme a demanda, ou seja, sua configuração de rate-limit é de 10 requisições por minuto, porém um cliente envia 20 requisições de uma vez, se sua API está com capacidade ociosa no
+servidor, você processa todas as requisições em alta performance e retorna ao client.
+
+Essa técnica é muito utilizada em APIs de streaming, onde o cliente pode solicitar um grande volume de dados de uma vez, e a API precisa ter a capacidade de processar essas requisições rapidamente.
+
+Diversos framworks e plataformas oferecem suporte nativo para essas técnicas, como por exemplo o Amazon API Gateway, que oferece suporte para rate limiting, throttling, API quota, API burst, etc.
+
+## Performance em APIs RESTful
+
+A performance é um dos aspectos mais importantes de uma API. Sem performance, a API pode ser lenta e não responsiva, o que pode afetar a experiência do usuário e a eficiência da aplicação. Neste capítulo, iremos abordar algumas práticas para melhorar a performance de uma API.
+
+### Cache
+
+O cache é uma técnica utilizada para armazenar temporariamente os dados em um local de fácil acesso, como por exemplo a memória RAM, o disco rígido, etc. Se tratando de APIs, ele é usado para reduzir o tempo de resposta da API, evitando assim a necessidade de fazer requisições repetidas ao servidor.
+
+A implementação de um cache não é simples, mas em contra partida, é uma das técnicas mais eficazes para melhorar a performance de uma API, por exemplo:
+
+- Reduz a latência da rede, pois os dados são armazenados localmente.
+- Reduz a carga do servidor, evitando a necessidade de fazer requisições repetidas ao servidor.
+- Reduz o tempo de resposta da API.
+
+Os caches podem ser do tipo `private` onde armazena as informações dos servidores para utilização de um único usuário ou `shared` onde os dados armazenados são compartilhados entre todos os clientes.
+
+Podem ser implementados através dos browsers, servidores de proxy, CDNs, load balancer, etc.
+
+O controle de cache se baseia nas especificações HTTP (RFC) e é feito através dos headers `Cache-Control`, `Expires`, `ETag`, `Last-Modified`, etc.
+
+### Cache do lado do cliente
+
+O header `Cache-Control` é o mais recomendado para controlar o cache do lado do cliente, pois ele permite que o servidor especifique como os dados devem ser armazenados em cache no lado do cliente.
+
+```bash
+Cache-Control: no-store
+```
+
+Neste exemplo, o servidor está instruindo o cliente a não armazenar os dados em cache, ou seja, os dados devem ser obtidos do servidor a cada requisição.
+
+```bash
+Cache-Control: no-cache
+```
+
+### No caching
