@@ -424,16 +424,132 @@ O controle de cache se baseia nas especificações HTTP (RFC) e é feito através do
 
 ### Cache do lado do cliente
 
-O header `Cache-Control` é o mais recomendado para controlar o cache do lado do cliente, pois ele permite que o servidor especifique como os dados devem ser armazenados em cache no lado do cliente.
+O header `Cache-Control` é o mais recomendado para controlar o cache do lado do cliente, pois ele permite que o servidor especifique como os dados devem ser armazenados em cache.
+
+- _No caching_
+
+Neste exemplo, você estará instruindo o navegador a não armazenar cache nem na requisição e nem na resposta.
+Toda vez que uma requisicao for feita, o navegador irá buscar e fazer o download dos dados do servidor novamente.
 
 ```bash
 Cache-Control: no-store
 ```
 
-Neste exemplo, o servidor está instruindo o cliente a não armazenar os dados em cache, ou seja, os dados devem ser obtidos do servidor a cada requisição.
+- _Cache sempre atualizado_
+
+Com essa diretiva `no-cache`, o navegador sempre irá enviar a requisição ao servidor para verificar se o cache está atualizado, caso esteja, serão devolvidos os dados quem estão em cache.
 
 ```bash
 Cache-Control: no-cache
 ```
 
-### No caching
+- _Caches publicos e privados_
+
+A diretiva `public` permite que o cache seja armazenado em cache tanto no servidor quanto no cliente, para que sejam compartilhados entre os usuários, enquanto a diretiva `private` permite que o cache seja armazenado apenas no cliente.
+
+```bash
+Cache-Control: public
+```
+
+```bash
+Cache-Control: private
+```
+
+- _Expiração do cache_
+
+A diretiva `max-age` especifica o tempo em segundos que o cache pode ser armazenado no cliente, ou seja, após o tempo especificado, o cache será considerado inválido e o navegador irá buscar os dados no servidor novamente.
+
+```bash
+Cache-Control: max-age=3600
+```
+
+- _Validação do cache_
+
+A diretiva `must-revalidate` indica que o tempo de expiração, indicado por `max-age`, `s-maxage` ou por `Expires`, deve ser obrigatoriamente obedecido. Nesse caso, o conteúdo obsoleto obrigatoriamente não pode ser entregue ao cliente, e o navegador pode usar um conteúdo obsoleto somente se ocorrer uma falha na rede
+
+```bash
+Cache-Control: must-revalidate
+```
+
+Se você quiser exigir uma revalidação do cache a cada vez que o cliente fizer uma requisição, você pode usar a diretiva `no-cache` em conjunto com a diretiva `must-revalidate`.
+
+```bash
+Cache-Control: no-cache, must-revalidate
+```
+
+Neste exemplo, `no-cache` garante que o recurso não seja servido a partir do cache sem revalidação, e `must-revalidate` assegura que o cliente deve revalidar o recurso com o servidor antes de utilizá-lo após sua expiração.
+
+Essas diretivas são úteis para garantir que o cliente sempre tenha a versão mais recente e válida do recurso, minimizando o uso de dados obsoletos armazenados em cache.
+
+- _Entity Tag (ETag)_
+
+O ETag é um identificador único que o servidor gera para cada recurso. Ele é usado para verificar se o recurso foi modificado desde a última requisição. O cliente envia o ETag na requisição e o servidor verifica se o ETag é o mesmo que o ETag do recurso. Se o ETag for o mesmo, o servidor retorna um código de status 304 e um JSON vazio, indicando que o recurso não foi modificado. Se o ETag for diferente, o servidor retorna o recurso com um código de status 200.
+
+É um dos mais eficientes mecanismos de cache, pois ele permite que o servidor envie apenas o cabeçalho de resposta, sem o corpo da resposta, caso o recurso não tenha sido modificado.
+
+```bash
+ETag: "123456789"
+```
+
+### Cache do lado do servidor
+
+Enquanto o cache do lado do cliente é usado para armazenar temporariamente os dados no navegador do cliente, o cache do lado do servidor é usado para armazenar temporariamente os dados no servidor da API.
+
+- _Load balancer_
+
+Em cenários e ambientes de alta demanda, é comum o uso de load balancer para distribuir a capacidade de processamento das requisições e tráfego de rede, com isso você torna a sua API mais escalável, resiliente e com alta disponibilidade. Caso um dos servidores falhar, o load balancer redireciona as requisições para outro servidor disponível. Por sua vez, o load balancing não tem uma funcionalidade padrão de cache, mas pode ser configurado para fazer cache de requisições, por exemplo, o Amazon Elastic Load Balancing (ELB) oferece suporte para cache de requisições, ou você pode utilizar a funcionalidade de armazenamento da sessão.
+
+Como os cabeçalhos HTTP são stateless, ou seja, não mantém estado, o load balancer pode ser configurado para armazenar temporariamente os dados das requisições, e por isso pode ser utilizado como um cache do lado do servidor.
+
+Existem diversos algoritimos de balanceamento de carga, as principais implementações são feitas através de configurações no proprio Web server, como por exemplo o Nginx, Apache, etc.
+
+- _Proxy reverso_
+
+É uma interface publica que fica entre o cliente e o servidor, funciona como um intermediador. A principais vantagens de se utilizar um proxy reverso são:
+
+- Segurança: o proxy reverso pode ser configurado para proteger o servidor de ataques, como por exemplo, ataques de negação de serviço, ataques de injeção de SQL, ataques de cross-site scripting, etc.
+- Cache: o proxy reverso pode ser configurado para armazenar temporariamente os dados das requisições, evitando assim a necessidade de fazer requisições repetidas ao servidor.
+- Performance: Funcionalidades nativas de compressão de dados trafegados em cache, como ele atua como intermediador de requisições, ele consegue tratar os dados de forma inteligente antes de retornar para o client.
+
+- _Gateway_
+
+Funciona como um proxy reverso, porém com funcionalidades mais avançadas, como por exemplo, autenticação, autorização, rate limiting, throttling, API quota, API burst, etc, além de ser também a interface de acesso das suas APIs para a internet.
+
+É o padrão de arquitetura para APIs modernas, onde você pode centralizar o controle de acesso, monitoramento, segurança, cache, em um único ponto de acesso. O Amazon API Gateway é um exemplo de gateway que oferece suporte para cache de requisições.
+
+Também existem outros mecanismos de armazenamento de dados de alta peformance, como Redis e Memcached.
+
+- _CDN_
+
+O CDN (Content Delivery Network) é uma rede de servidores distribuídos geograficamente que armazena temporariamente os dados das requisições. Ele é usado para reduzir a latência da rede e reduzir a carga do servidor, como esse armazenamento é geograficamente distribuído, ele consegue redirecionar as requisições do cliente para um servidor mais próximo, reduzindo assim o tempo de resposta da API.
+
+Essa técninca pode ser utilizada para Web de forma geral, não limita somente para o mundo de APIs. Alguns players do mercado são Cloudflare, Akamai, Amazon CloudFront, etc.
+
+### Compressão de dados
+
+O padrão REST permite que fiversos formatos de dados sejam utilizados, como por exemplo, JSON, XML, HTML, etc. Em todos eles é possível comprimir a mensagem (payload) antes de ser enviada, gerando uma melhoria de performance na API.
+
+- _Accept-Encoding_
+
+O header `Accept-Encoding` é usado para especificar os tipos de compressão no lado do cliente. Ele pode ser usado para especificar a compressão `gzip`, `deflate`, `br`, etc. Sendo o `gzip` o mais comum e amplamente suportado.
+
+```bash
+Accept-Encoding: gzip, deflate, br
+```
+
+- _Content-Encoding_
+
+Nesse caso o servidor que irá comprimir a mensagem antes de enviar para o cliente, o header `Content-Encoding` é usado para retornar ao cliente o indicativo de qual compressão foi utilizada.
+
+```bash
+200 OK
+Content-Type: application/json
+Content-Encoding: gzip
+```
+
+Caso o `Accept-Encoding` informado pelo cliente não for reconhecido pelo servidor, ele pode retornar um código de status 406 - Not Acceptable e um JSON vazio, indicando que a compressão não é suportada.
+
+Se for um formato conhecido, mas o servidor ainda não tiver implementado, então ele deverá retornar um código de status 415 - Unsupported Media Type.
+
+> Você sabia? A maioria dos browsers automaticamente fazem a requisição utilizando essas técnicas de compressão de dados.
+
