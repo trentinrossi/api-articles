@@ -2,9 +2,9 @@ Instructions prompt: I need to create a article about best practices to implemen
 
 # APIs Restful - Boas práticas de implementação
 
-Um desenvoledor usa em média 18 APIs diferentes por semana e 60% dos desenvolvedores usam APIs de terceiros para melhorar a funcionalidade de seus aplicativos. Todo ano, surgem mais de 15.000 novas APIs.
+Estudos e pesquisas recentes realizadas pela Mulesoft e pelo Stackoverflow, indicam que um desenvoledor usa em média de 18 a 29 APIs diferentes por semana e cerca de 83% dos desenvolvedores utilizam alguma API de terceiros para melhorar a funcionalidade de seus aplicativos. Todo mes, surgem mais de 2.500 novas APIs.
 
-O mercado de APIs está crescendo rapidamente. Em 2019, o mercado global de APIs foi avaliado em US$ 5,2 bilhões e espera-se que atinja US$ 6,2 bilhões até 2024.
+O mercado de APIs está crescendo rapidamente. Em 2019, o mercado global de APIs foi avaliado em quase US$ 2 bilhões e espera-se que atinja mais de US$ 10 bilhões até 2024.
 
 ## Entendendo as requisições HTTP
 
@@ -22,6 +22,7 @@ Neste exemplo, o endpoint é `/alunos`, ou seja, estamos acessando o recurso de a
 - Use letras minúsculas e separar as palavras com hífen, ou seja, `/alunos` em vez de `/Alunos`.
 - Use nomes descritivos para os endpoints, ou seja, `/alunos` em vez de `/a`.
 - Use sub-recursos para representar relacionamentos, ou seja, `/alunos/123/matriculas` em vez de `/matriculas?aluno=123`.
+- Para endpoints com nomes compostos use o padrão Kebab Case, ou seja, `/alunos-matriculados`.
 
 ### Base URL
 
