@@ -68,6 +68,9 @@ Neste exemplo, a versão da API é `v1`, ou seja, estamos acessando a primeira ver
 - A melhor prática é usar a versão da API na URL, ou seja, `/v1` ou `/v1.0`. Desta forma o versionamento fica mais verboso e fácil de identificar.
 - Evite usar a versão da API no header da requisição ou no query parameters, pois dificulta a identificação da versão da API.
 
+Errado: `http://api.escola.com.br/alunos?version=v1`
+Correto: `http://api.escola.com.br/v1/alunos`
+
 ### Query parameters
 
 São usados para filtrar, ordenar ou paginar os resultados. Por exemplo
@@ -139,6 +142,15 @@ curl -X POST "http://api.escola.com.br/v1/alunos" -d '{"nome": "João", "idade": 
 ```
 
 Ele é utilizado somente nos métodos de POST, PUT, PATCH, ou seja, ele contém o dado a ser processado pela API, e por isso ele não é necessário em métodos de leitura de dados.
+
+Utilize objetos legíveis, descritivos e limpos, isso facilita a leitura de um objeto e quanto mais simples ele for, mais fácil de entende-lo, exemplo:
+
+```javascript
+{
+  "nome": "João",
+  "idade": 18,
+  "email": "
+}
 
 ### Status code
 
@@ -553,3 +565,121 @@ Se for um formato conhecido, mas o servidor ainda não tiver implementado, então 
 
 > Você sabia? A maioria dos browsers automaticamente fazem a requisição utilizando essas técnicas de compressão de dados.
 
+## Nível de maturidade de Richardson
+
+Agora que você já conhece as boas práticas de uma API RESTful, é importante entender que existem diferentes níveis de maturidade de uma API RESTful, que foram definidos por Leonard Richardson em seu artigo "Maturity Model for REST".
+
+### Nível 0 - Swamp of POX
+
+Neste nível, a API é baseada em POX (Plain Old XML), ou seja, ela usa XML como formato de dados e HTTP como protocolo de comunicação, mas não segue os princípios de uma API RESTful. Ela é basicamente uma RPC (Remote Procedure Call) sobre HTTP, onde os recursos são representados por URLs e as operações são representadas por métodos HTTP, mas não há uma separação clara entre os recursos e as operações.
+
+- Exemplo:
+  `GET  http://api.escola.com.br/v1/alunos?action=list`
+  `POST http://api.escola.com.br/v1/alunos?action=add`
+  `GET  http://api.escola.com.br/v1/getAlunos`
+
+### Nível 1 - Resources
+
+Neste nível, a API começa a seguir os princípios de uma API RESTful, onde os recursos são representados por URLs e as operações são representadas por métodos HTTP. No entanto, os recursos não são auto-descritivos, ou seja, eles não fornecem informações sobre si mesmos, como por exemplo, os tipos de mídia que eles suportam, os métodos HTTP que eles suportam, etc.
+
+- Exemplo:
+  `GET    http://api.escola.com.br/v1/alunos`
+  `POST   http://api.escola.com.br/v1/alunos`
+  `PUT    http://api.escola.com.br/v1/alunos/123`
+  `DELETE http://api.escola.com.br/v1/alunos/123`
+
+### Nível 2 - HTTP Verbs
+
+Neste nível, a API começa a usar os métodos HTTP corretamente, ou seja, ela usa os métodos HTTP para representar as operações sobre os recursos. No entanto, ela ainda não usa os códigos de status HTTP corretamente, ou seja, ela não fornece informações sobre o resultado das operações. Além do mais sua API já começa a ter recursos mais avançados como versionamento, rastreabilidade e HATEOAS (Hypertext As The Engine Of Application State).
+
+- _Não use verbos nos nomes dos recursos:_
+
+  - Errado:
+    `GET http://api.escola.com.br/v1/getAlunos`
+
+  - Correto:
+    `GET    http://api.escola.com.br/v1/alunos`
+    `POST   http://api.escola.com.br/v1/alunos`
+    `PUT    http://api.escola.com.br/v1/alunos/123`
+    `DELETE http://api.escola.com.br/v1/alunos/123`
+
+- _Use Content-Type no header da requisição:_
+
+  - Errado:
+    `GET http://api.escola.com.br/v1/alunos/123/notas.json`
+
+  - Correto:
+    `GET http://api.escola.com.br/v1/alunos/123/notas`
+    `Accept: application/json`
+    `Content-Type: application/json`
+
+Tenha uma estrutura de URL consistente e simples, evite URLs complexas e confusas, como por exemplo:
+
+- Errado:
+  `GET http://api.escola.com.br/v1/alunos/123/notas/456/aulas/789/atividades/101112`
+
+- Certo:
+  `GET http://api.escola.com.br/v1/alunos/123/notas?aula=789&atividade=101112`
+
+- _Utilize status code corretos:_
+
+  - Errado:
+    `200 OK` para uma requisição que falhou.
+
+  - Certo:
+    `404 Not Found` para uma requisição que falhou.
+
+- _Paginação, ordenação e filtragem:_
+
+Implementar correto esses mecanismos proporcionam uma boa experiência para o desenvolvedor, além de melhorar a performance da API, mas tome os seguintes cuidados:
+
+1. Implemente uma técnica de paginação conforme [foi explicado anteriormente](#paginação-ordenação-e-filtragem).
+2. Coloque na documentação em qual página que iniciará a paginação, exemplo: 0 ou 1, pois se você não informar, o desenvolvedor poderá usar ambas e obter o mesmo resultado.
+3. Acrescente range de datas no filtro, pois é muito comum a necessidade de buscar dados em um intervalo de datas. Exemplo: `CreatedBefore`, `CreatedAfter`, `UpdatedBefore`, `UpdatedAfter`.
+4. Não coloque filtros obrigatórios que nulam o objetivo da busca, exemplo: `GET /alunos?nome=`. Isso prejudica a experiência do desenvolvedor.
+
+### Nível 3 - Hypermedia Controls (HATEOAS)
+
+Este é o nível mais alto conforme a definição de maturidade formada por Richardson sobre uma API RESTful, onde a API é auto-descritiva, ou seja, ela fornece informações sobre si mesma, como por exemplo, os tipos de mídia que ela suporta, os métodos HTTP que ela suporta, etc. Ela também usa os códigos de status HTTP corretamente, ou seja, ela fornece informações sobre o resultado das operações. Bem como a API fornece links para os recursos relacionados, permitindo assim a navegação entre os recursos.
+
+- _Exemplo de HATEOAS:_
+
+Request:
+
+```bash
+POST http://api.escola.com.br/v1/alunos/123
+Body:
+{
+  "nome": "João"
+}
+```
+
+Response:
+
+```json
+Response Status: 201 Created
+Body:
+{
+  "id": 123,
+  "nome": "João",
+  "insertionDate": "2021-01-01",
+  "links": [
+    {
+      "rel": "self",
+      "href": "http://api.escola.com.br/v1/alunos/123"
+    },
+    {
+      "rel": "notas",
+      "href": "http://api.escola.com.br/v1/alunos/123/notas"
+    }
+  ]
+}
+```
+
+### Nível 4 - Developer Experience
+
+Este é um nível adicional que não faz parte da definição de maturidade de Richardson, mas nós da GFT acreditamos que ele é importante para a experiência do desenvolvedor. Neste nível, a API é fácil de usar, bem documentada, testada, com monitoramento, versionada, segura, escalável, performática, etc.
+
+- _Documentação:_
+
+  - A documentação da API deve ser clara, concisa e fácil de entender, ela deve fornecer informações sobre os recursos, os métodos HTTP, os tipos de mídia, os códigos de status, etc. Ela também deve fornecer exemplos de requisições e respostas, além de fornecer informações sobre a autenticação, a autorização, a segurança, a performance, etc.
